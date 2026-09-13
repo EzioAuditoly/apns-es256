@@ -207,6 +207,19 @@ print(result.attempts)      # 实际请求次数
 
 **provider token 缓存**：Apple 允许同一 token 复用最多 1 小时，并对重签频率有限制（`TooManyProviderTokenUpdates`）。本库缓存 **3600 秒、提前 60 秒失效**，收到 `ExpiredProviderToken` / `InvalidProviderToken` 时自动作废重签。
 
+**关键默认值一览**（均可在 `ApnsConfig` 上覆盖）：
+
+| 配置项 | 默认值 | 说明 |
+|---|---|---|
+| `timeout` | **30.0** 秒 | 单次请求超时 |
+| `max_retries` | **0** | 即默认不重试，见上方注意事项 |
+| `retry_backoff` | 0.5 秒 | 退避基数，第 n 次重试等待 `retry_backoff * 2**(n-1)` |
+| `sandbox_fallback` | `True` | 生产端点 `BadDeviceToken` 时回落沙箱 |
+| `environment` | `production` | 起始环境 |
+| token 缓存 TTL | **3600** 秒 | provider token 复用时长 |
+| token 提前失效 | **60** 秒 | 距过期不足该余量时重签 |
+| payload 上限 | **4096** 字节 | Apple 硬限制，超限直接报错不发请求 |
+
 ---
 
 ## 已知限制
@@ -234,9 +247,14 @@ print(result.attempts)      # 实际请求次数
 
 ---
 
-## 抽取记录
+## 关于代码来源
 
-本库的代码来源、逐函数抽取范围、常量替换明细与业务耦合剥离记录，见 [`EXTRACT-PLAN.md`](EXTRACT-PLAN.md)。
+本库由一套内部 APNs 推送实现中**与业务无关的算法部分**抽取、改写而成：保留手写 ES256
+签名与 DER → 原始 `R‖S` 的转换、HTTP/2 直连、生产端点 `BadDeviceToken` 回落沙箱这几项
+核心逻辑，并剥离了业务侧的通知编排（查库、按平台分流）、第三方通道客户端与全局单例。
+
+抽取范围、常量替换与逐函数对照记录作为**内部文档**单独维护，**不随本仓库发布**。
+其中不含任何真实凭据值。
 
 ---
 
